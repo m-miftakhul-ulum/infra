@@ -1,0 +1,51 @@
+- name: Install Jenkins on Ubuntu
+  hosts: myhosts
+  become: yes
+  tasks:
+    - name: Update package list
+      apt:
+        update_cache: yes
+
+    - name: Install required dependencies
+      apt:
+        name:
+          - openjdk-17-jre-headless
+          - ca-certificates
+          - curl
+        state: present
+
+    - name: Download Jenkins GPG key
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+        mode: "0644"
+
+    - name: Add Jenkins repository to Apt sources
+      copy:
+        dest: /etc/apt/sources.list.d/jenkins.list
+        content: |
+          deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/
+        mode: "0644"
+
+    - name: Update package list after adding Jenkins repo
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Ensure Jenkins service is enabled and started
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
+    - name: Baca isi file password Jenkins
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+      changed_when: false
+
+    - name: Tampilkan password
+      debug:
+        msg: "{{ jenkins_password.stdout }}"

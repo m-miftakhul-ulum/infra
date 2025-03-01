@@ -1,0 +1,119 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql_container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - bridge
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+  backend1:
+    image: ulum75/backend:v1
+    container_name: laravel_backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_NAME: Laravel
+      APP_ENV: local
+      APP_KEY: base64:jPrMGGZ2Pf2ui5QpT+u6LFBeBIfcJrqKhsciVZhpgfo=
+      APP_DEBUG: false
+      APP_URL: http://localhost
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: mydb
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      ML_HOST: ml_backend
+      ML_PORT: 5001
+    ports:
+      - "8000:8000"
+    volumes:
+      - storage-volume:/var/www/html/storage
+    working_dir: /var/www/html
+    command: >
+      sh -c "php artisan optimize:clear &&
+             php artisan config:clear &&
+             php artisan cache:clear &&
+             php artisan config:cache &&
+             php artisan migrate --force &&
+             php artisan serve --host=0.0.0.0 --port=8000"
+    networks:
+      - bridge
+
+  backend2:
+    image: ulum75/backend:v1
+    container_name: laravel_backend2
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_NAME: Laravel
+      APP_ENV: local
+      APP_KEY: base64:jPrMGGZ2Pf2ui5QpT+u6LFBeBIfcJrqKhsciVZhpgfo=
+      APP_DEBUG: false
+      APP_URL: http://localhost
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: mydb
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      ML_HOST: ml_backend
+      ML_PORT: 5001
+    ports:
+      - "8001:8000"
+    volumes:
+      - storage-volume:/var/www/html/storage
+    working_dir: /var/www/html
+    command: >
+      sh -c "php artisan optimize:clear &&
+             php artisan config:clear &&
+             php artisan cache:clear &&
+             php artisan config:cache &&
+             php artisan passport:install &&
+             php artisan migrate --force &&
+             php artisan db:seed &&
+             php artisan serve --host=0.0.0.0 --port=8000"
+    networks:
+      - bridge
+
+  ml-backend:
+    image: ulum75/tanaman:v1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: '400M'
+        reservations:
+          cpus: '0.1'
+          memory: '180M'
+    container_name: ml_backend
+    restart: always
+    ports:
+      - "5001:8000"
+    networks:
+      - bridge
+
+networks:
+  bridge:
+
+volumes:
+  mysql_data:
+  storage-volume:
