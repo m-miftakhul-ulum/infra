@@ -22,6 +22,14 @@ services:
 
   backend1:
     image: ulum75/backend:v1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: '150M'
+        reservations:
+          cpus: '0.1'
+          memory: '100M'
     container_name: laravel_backend
     restart: always
     depends_on:
@@ -58,6 +66,14 @@ services:
 
   backend2:
     image: ulum75/backend:v1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: '150M'
+        reservations:
+          cpus: '0.1'
+          memory: '100M'
     container_name: laravel_backend2
     restart: always
     depends_on:
